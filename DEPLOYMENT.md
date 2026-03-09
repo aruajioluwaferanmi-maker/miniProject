@@ -1,27 +1,36 @@
 # CI/CD Deployment Setup
 
-This project now includes GitHub Actions workflows for CI and CD.
+This project now includes GitHub Actions workflows for CI and CD using Vercel for deployment.
 
 ## Workflows
 
 - `CI` workflow: `.github/workflows/ci.yml`
 - `CD` workflow: `.github/workflows/cd.yml`
 
+## Scope
+
+Current CD workflow deploys the `frontend` to Vercel.
+The `backend` deployment should be handled by your backend host (Railway/Render/Fly/etc.) or a separate workflow.
+
 ## Branch Strategy
 
-- `staging` branch -> deploys to staging
-- `main` branch -> deploys to production
+- `staging` branch -> deploys Vercel Preview
+- `main` branch -> deploys Vercel Production
 
 You can also trigger CD manually from GitHub Actions using `workflow_dispatch`.
 
-## Required GitHub Secrets
+## Required GitHub Secrets (Vercel)
 
 Add these in `GitHub repo -> Settings -> Secrets and variables -> Actions`:
 
-- `STAGING_DEPLOY_HOOK_URL`
-- `PRODUCTION_DEPLOY_HOOK_URL`
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
 
-These are deploy webhook URLs from your hosting platform (for example Render, Railway, Netlify, or any service with deploy hooks).
+You can get these from the Vercel dashboard:
+
+- `Settings -> Tokens` for `VERCEL_TOKEN`
+- Project `.vercel/project.json` for `orgId` and `projectId` (or run `vercel link` locally)
 
 ## What CI checks
 
@@ -31,9 +40,9 @@ These are deploy webhook URLs from your hosting platform (for example Render, Ra
 ## What CD does
 
 1. Runs the same quality gate (backend tests + frontend build).
-2. If successful, triggers the environment deploy hook:
-   - staging hook for `staging`
-   - production hook for `main`
+2. If successful, deploys frontend to Vercel:
+   - Preview deploy for `staging`
+   - Production deploy for `main`
 
 ## Optional hardening
 
