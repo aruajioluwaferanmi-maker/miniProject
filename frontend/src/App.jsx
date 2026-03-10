@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
+import uiConfig from "./uiConfig.js";
 
 const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -322,93 +323,64 @@ function App() {
     return () => clearInterval(timer);
   }, [featureFlags.enableMonitoringDashboard]);
 
-  return (
-    <main className="storefront">
-      <header className="hero">
-        <p className="eyebrow">Mini Commerce</p>
-        <h1>Discover Products, View Details, and Manage Your Cart</h1>
-        <p>
-          Environment: <strong>{import.meta.env.MODE}</strong> | API:{" "}
-          <strong>{resolvedApiBaseUrl}</strong> | Cart Items:{" "}
-          <strong>{cartCount}</strong>
-        </p>
-      </header>
-
-      <div className="tabBar">
-        <button
-          className={activeTab === "shop" ? "tabButton activeTab" : "tabButton"}
-          onClick={() => setActiveTab("shop")}
-        >
-          Storefront
-        </button>
-        <button
-          className={activeTab === "ops" ? "tabButton activeTab" : "tabButton"}
-          onClick={() => setActiveTab("ops")}
-          disabled={!featureFlags.enableMonitoringDashboard}
-        >
-          Operations Dashboard
-        </button>
-      </div>
-
-      {statusMessage ? (
-        <p className="message success">{statusMessage}</p>
-      ) : null}
-      {errorMessage ? <p className="message error">{errorMessage}</p> : null}
-
-      {activeTab === "shop" ? (
-        <>
-          <section className="layout">
-            <div className="panel">
-              <h2>Products</h2>
-              <div className="productGrid">
-                {products.map((product) => (
-                  <article className="productCard" key={product.id}>
-                    <img src={product.image} alt={product.name} />
-                    <h3>{product.name}</h3>
-                    <p className="price">${product.price.toFixed(2)}</p>
-                    <div className="actions">
-                      <button
-                        onClick={() => loadProductDetails(product.id)}
-                        disabled={!featureFlags.enableProductDetails}
-                      >
-                        View details
-                      </button>
-                      <button
-                        onClick={() => addProductToCart(product.id)}
-                        disabled={!featureFlags.enableCart}
-                      >
-                        Add to cart
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
+  function renderSection(section) {
+    switch (section) {
+      case "products":
+        return (
+          <div className="panel">
+            <h2>Products</h2>
+            <div className="productGrid">
+              {products.map((product) => (
+                <article className="productCard" key={product.id}>
+                  <img src={product.image} alt={product.name} />
+                  <h3>{product.name}</h3>
+                  <p className="price">${product.price.toFixed(2)}</p>
+                  <div className="actions">
+                    <button
+                      onClick={() => loadProductDetails(product.id)}
+                      disabled={!featureFlags.enableProductDetails}
+                    >
+                      View details
+                    </button>
+                    <button
+                      onClick={() => addProductToCart(product.id)}
+                      disabled={!featureFlags.enableCart}
+                    >
+                      Add to cart
+                    </button>
+                  </div>
+                </article>
+              ))}
             </div>
-
-            <aside className="panel detailsPanel">
-              <h2>Product Details</h2>
-              {!featureFlags.enableProductDetails ? (
-                <p>Product details are disabled by feature flag.</p>
-              ) : selectedProduct ? (
-                <>
-                  <img
-                    src={selectedProduct.image}
-                    alt={selectedProduct.name}
-                    className="detailImage"
-                  />
-                  <h3>{selectedProduct.name}</h3>
-                  <p className="price">${selectedProduct.price.toFixed(2)}</p>
-                  <p>{selectedProduct.description}</p>
-                  <button onClick={() => addProductToCart(selectedProduct.id)}>
-                    Add selected item
-                  </button>
-                </>
-              ) : (
-                <p>Select a product to see more description.</p>
-              )}
-            </aside>
-          </section>
-
+          </div>
+        );
+      case "details":
+        return (
+          <aside className="panel detailsPanel">
+            <h2>Product Details</h2>
+            {!featureFlags.enableProductDetails ? (
+              <p>Product details are disabled by feature flag.</p>
+            ) : selectedProduct ? (
+              <>
+                <img
+                  src={selectedProduct.image}
+                  alt={selectedProduct.name}
+                  className="detailImage"
+                />
+                <h3>{selectedProduct.name}</h3>
+                <p className="price">${selectedProduct.price.toFixed(2)}</p>
+                <p>{selectedProduct.description}</p>
+                <button onClick={() => addProductToCart(selectedProduct.id)}>
+                  Add selected item
+                </button>
+              </>
+            ) : (
+              <p>Select a product to see more description.</p>
+            )}
+          </aside>
+        );
+      case "cart":
+        return (
           <section className="panel">
             <h2>Cart</h2>
             {!featureFlags.enableCart ? (
@@ -434,9 +406,9 @@ function App() {
             )}
             <p className="cartTotal">Total: ${cart.total.toFixed(2)}</p>
           </section>
-        </>
-      ) : featureFlags.enableMonitoringDashboard ? (
-        <section className="opsLayout">
+        );
+      case "opsFlags":
+        return (
           <article className="panel">
             <h2>Feature Flags</h2>
             <div className="flagList">
@@ -473,7 +445,9 @@ function App() {
               ))}
             </ul>
           </article>
-
+        );
+      case "opsMonitoring":
+        return (
           <article className="panel">
             <h2>Monitoring</h2>
             <p>Total Requests: {monitoring.summary.totalRequests}</p>
@@ -485,7 +459,9 @@ function App() {
               <button onClick={createTestIncident}>Create incident</button>
             </div>
           </article>
-
+        );
+      case "opsAlerts":
+        return (
           <article className="panel">
             <h2>Alerts</h2>
             <ul className="opsList">
@@ -527,6 +503,72 @@ function App() {
               ))}
             </ul>
           </article>
+        );
+      default:
+        return null;
+    }
+  }
+
+  const shopSections = uiConfig.shopSections.filter(
+    (section) => section.enabled,
+  );
+  const opsSections = uiConfig.opsSections.filter((section) => section.enabled);
+  const shopLayoutSections = shopSections.filter(
+    (section) => section.location === "layout",
+  );
+  const shopFullSections = shopSections.filter(
+    (section) => section.location === "full",
+  );
+
+  return (
+    <main className="storefront">
+      <header className="hero">
+        <p className="eyebrow">Mini Commerce</p>
+        <h1>Discover Products, View Details, and Manage Your Cart</h1>
+        <p>
+          Environment: <strong>{import.meta.env.MODE}</strong> | API:{" "}
+          <strong>{resolvedApiBaseUrl}</strong> | Cart Items:{" "}
+          <strong>{cartCount}</strong>
+        </p>
+      </header>
+
+      <div className="tabBar">
+        <button
+          className={activeTab === "shop" ? "tabButton activeTab" : "tabButton"}
+          onClick={() => setActiveTab("shop")}
+        >
+          Storefront
+        </button>
+        <button
+          className={activeTab === "ops" ? "tabButton activeTab" : "tabButton"}
+          onClick={() => setActiveTab("ops")}
+          disabled={!featureFlags.enableMonitoringDashboard}
+        >
+          Operations Dashboard
+        </button>
+      </div>
+
+      {statusMessage ? (
+        <p className="message success">{statusMessage}</p>
+      ) : null}
+      {errorMessage ? <p className="message error">{errorMessage}</p> : null}
+
+      {activeTab === "shop" ? (
+        <>
+          <section className="layout">
+            {shopLayoutSections.map((section) => (
+              <div key={section.id}>{renderSection(section.id)}</div>
+            ))}
+          </section>
+          {shopFullSections.map((section) => (
+            <div key={section.id}>{renderSection(section.id)}</div>
+          ))}
+        </>
+      ) : featureFlags.enableMonitoringDashboard ? (
+        <section className="opsLayout">
+          {opsSections.map((section) => (
+            <div key={section.id}>{renderSection(section.id)}</div>
+          ))}
         </section>
       ) : (
         <section className="panel">
