@@ -5,6 +5,11 @@ import uiConfig from "./uiConfig.js";
 const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 let activeApiBaseUrl = apiBaseUrl;
+const currencyFormatter = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+  maximumFractionDigits: 2,
+});
 
 function getApiCandidates() {
   const host = window.location.hostname || "localhost";
@@ -334,7 +339,9 @@ function App() {
                 <article className="productCard" key={product.id}>
                   <img src={product.image} alt={product.name} />
                   <h3>{product.name}</h3>
-                  <p className="price">${product.price.toFixed(2)}</p>
+                  <p className="price">
+                    {currencyFormatter.format(product.price)}
+                  </p>
                   <div className="actions">
                     <button
                       onClick={() => loadProductDetails(product.id)}
@@ -368,7 +375,9 @@ function App() {
                   className="detailImage"
                 />
                 <h3>{selectedProduct.name}</h3>
-                <p className="price">${selectedProduct.price.toFixed(2)}</p>
+                <p className="price">
+                  {currencyFormatter.format(selectedProduct.price)}
+                </p>
                 <p>{selectedProduct.description}</p>
                 <button onClick={() => addProductToCart(selectedProduct.id)}>
                   Add selected item
@@ -394,7 +403,7 @@ function App() {
                     <span>
                       {item.product.name} x {item.quantity}
                     </span>
-                    <span>${item.lineTotal.toFixed(2)}</span>
+                    <span>{currencyFormatter.format(item.lineTotal)}</span>
                     <button
                       onClick={() => removeProductFromCart(item.product.id)}
                     >
@@ -404,7 +413,9 @@ function App() {
                 ))}
               </ul>
             )}
-            <p className="cartTotal">Total: ${cart.total.toFixed(2)}</p>
+            <p className="cartTotal">
+              Total: {currencyFormatter.format(cart.total)}
+            </p>
           </section>
         );
       case "opsFlags":
